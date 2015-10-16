@@ -142,7 +142,7 @@ var TSON;
                     pathInfo.obj[pathInfo.nextWord] = fn;
                 }
                 else {
-                    var val = getObjFromPath(window, subs[path]);
+                    var val = getObjFromPath(getGlobalObject(), subs[path]);
                     pathInfo.obj[pathInfo.nextWord] = val.obj;
                 }
             }
@@ -223,6 +223,10 @@ var TSON;
         return true;
     }
     function validateIdempotence(objOrGetter, stringifyOptions, objectifyOptions) {
+        var originalObj = objOrGetter;
+        if (typeof originalObj !== 'object') {
+            originalObj = objOrGetter();
+        }
         var str = stringify(objOrGetter, stringifyOptions);
         if (objectifyOptions && objectifyOptions.getter) {
             var g = getGlobalObject();
@@ -231,8 +235,9 @@ var TSON;
             var splitPath = path.split('.');
             var lastWord = splitPath[splitPath.length - 1];
             delete objContainer.obj[lastWord];
-            debugger;
         }
+        var objTest = objectify(str, objectifyOptions);
+        return compare2Objects(originalObj, objTest);
     }
     TSON.validateIdempotence = validateIdempotence;
     ////from http://stackoverflow.com/questions/2008279/validate-a-javascript-function-name

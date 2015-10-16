@@ -156,7 +156,7 @@ module TSON{
                     pathInfo.obj[pathInfo.nextWord] = fn;
                 }else{
 
-                    const val = getObjFromPath(window, subs[path]);
+                    const val = getObjFromPath(getGlobalObject(), subs[path]);
                     pathInfo.obj[pathInfo.nextWord] = val.obj;
                 }
 
@@ -252,7 +252,11 @@ module TSON{
     export function validateIdempotence(objOrGetter: objOrObjGetter, 
         stringifyOptions?: IStringifyOptions,
         objectifyOptions?: IObjectifyOptions
-    ){
+    ) : boolean {
+        let originalObj = objOrGetter;
+        if(typeof originalObj !== 'object'){
+            originalObj = (<any>objOrGetter)();
+        }
         const str = stringify(objOrGetter, stringifyOptions);
         if(objectifyOptions && objectifyOptions.getter){
             const g = getGlobalObject();
@@ -261,8 +265,9 @@ module TSON{
             const splitPath = path.split('.');
             const lastWord = splitPath[splitPath.length - 1];
             delete objContainer.obj[lastWord];
-            debugger;
         }
+        const objTest = objectify(str, objectifyOptions);
+        return compare2Objects(originalObj, objTest);
     }
 
     ////from http://stackoverflow.com/questions/2008279/validate-a-javascript-function-name

@@ -269,3 +269,4 @@ var TSON;
         __global[modInfo.name] = modInfo.mod;
     }
 })(TSON.getGlobalObject());
+//# sourceMappingURL=TSON.js.map

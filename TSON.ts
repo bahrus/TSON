@@ -1,5 +1,6 @@
 declare const WorkerGlobalScope;
 
+
 module TSON{
 
     const fnSignature = 'return ';
@@ -101,8 +102,22 @@ module TSON{
         if(!truncateNo) truncateNo = 0;
         const paths = path.split('.');
         let modulePath = startingObj;
+        if(paths.length > 0){
+            const startingPath = paths[0];
+            if(!modulePath[startingPath]){
+                modulePath = eval(startingPath);
+                if(!modulePath){
+                    modulePath = getGlobalObject()[startingPath];
+                    if(!modulePath){
+                        //not found, but just let the rest create
+                        modulePath = {};
+                        startingObj[startingPath] = modulePath;
+                    }
+                }
+            }
+        }
         let n = paths.length;
-        for(let i = 0; i < n - truncateNo; i++){
+        for(let i = 1; i < n - truncateNo; i++){
             const word = paths[i];
             let newModulePath = modulePath[word];
             if(createIfNotFound){
@@ -124,11 +139,32 @@ module TSON{
         }
         return returnObj;
     }
+
     export interface IObjectifyOptions{
-        getter?: () => Object
+        /**
+         * Put the deserialized object into the path indicated by this simple getter.
+         * Getter must be a simple path statement, like () => myNameSpace.myModule.myObject;
+         */
+        getter?: () => Object;
+
+        /**
+         * If a getter is provided, the objectifier will check first if the rootObject property is specified.
+         * If not found, it will start from the global object
+         * (window in browser setting, global in a node.js context, WorkerGlobalScope in a web worker)
+         *
+         */
+        getterRootObject?: Object;
+
+        /**
+         * TBD
+         */
+        referenceRootObjects?: Object[];
+
     }
+
     export function objectify(tson: string, options?: IObjectifyOptions){
         const obj = JSON.parse(tson);
+        let rootObj = getGlobalObject();
         if(options){
             const getter = options.getter;
             if(getter){
@@ -137,7 +173,8 @@ module TSON{
                     if(obj[__name__] !== fnString){
                         throw "Destination path does not match signature of object";
                     }
-                    const moduleInfo = getObjFromPath(getGlobalObject(), fnString, true, 1);
+                    if(options.getterRootObject) rootObj = options.getterRootObject;
+                    const moduleInfo = getObjFromPath(rootObj, fnString, true, 1);
                     moduleInfo.obj[moduleInfo.nextWord] = obj;
                 }else{
                     throw "No namespace found";
@@ -156,7 +193,7 @@ module TSON{
                     pathInfo.obj[pathInfo.nextWord] = fn;
                 }else{
 
-                    const val = getObjFromPath(getGlobalObject(), subs[path]);
+                    const val = getObjFromPath(rootObj, subs[path]);
                     pathInfo.obj[pathInfo.nextWord] = val.obj;
                 }
 
@@ -275,7 +312,7 @@ module TSON{
     //function isValidIdentifierName(s: string) {
     //    return validIdentifierName.test(s);
     //}
-    export function getGlobalObject(){
+    export function getGlobalObject() : Object{
         return typeof window !== "undefined" ? window :
         typeof WorkerGlobalScope !== "undefined" ? self :
             typeof global !== "undefined" ? global :

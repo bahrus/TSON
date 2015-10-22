@@ -210,7 +210,7 @@ module TSON{
         return fnString;
     }
 
-    function compare2Objects (x, y) {
+    export function isEqual (x, y) {
         var p;
 
         // remember that NaN === NaN returns false
@@ -304,7 +304,7 @@ module TSON{
             delete objContainer.obj[lastWord];
         }
         const objTest = objectify(str, objectifyOptions);
-        return compare2Objects(originalObj, objTest);
+        return isEqual(originalObj, objTest);
     }
 
     ////from http://stackoverflow.com/questions/2008279/validate-a-javascript-function-name

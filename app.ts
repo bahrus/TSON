@@ -25,6 +25,8 @@ module myModule.whatever{
     export const test5 = i => i.something;
     export const test6 = [i => i.something1, i => i.something2];
 
+
+
 }
 global['myModule'] = myModule;
 global['myReferencedModule'] = myReferencedModule;

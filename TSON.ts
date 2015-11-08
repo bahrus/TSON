@@ -188,7 +188,6 @@ module TSON{
             const resolver = (options && options.resolver) ? options.resolver : eval;
             
             for(var path in subs){
-                debugger;
                 const valPath = subs[path];
                 const pathInfo = getObjFromPath(obj, path, false, 1);
                 if(valPath.indexOf(fnHeader) === 0){

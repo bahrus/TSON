@@ -154,7 +154,6 @@ var TSON;
         if (subs) {
             var resolver = (options && options.resolver) ? options.resolver : eval;
             for (var path in subs) {
-                debugger;
                 var valPath = subs[path];
                 var pathInfo = getObjFromPath(obj, path, false, 1);
                 if (valPath.indexOf(fnHeader) === 0) {

@@ -160,17 +160,19 @@ const referenceObject = {
 const referencerObject = {
     myRef: referenceObject,
 };
-const refs = [
-    () => referenceObject
-];
-const stringifyOptions = {
-    refs: refs
+const stringifyOptions : TSON.IStringifyOptions = {
+    refs: [() => referenceObject]
+}
+const objectifyOptions: TSON.IObjectifyOptions = {
+    resolver: s => {
+        return eval(s);
+    }
 }
 const serializedString = TSON.stringify(referencerObject, stringifyOptions);
-const clonedObject = TSON.objectify(serializedString);
+const clonedObject = TSON.objectify(serializedString, objectifyOptions);
 referenceObject.refString = 'newValue';
 console.log(clonedObject.myRef.refString);
 //newValue                     
 ```
 
-In this case, the references array refers to a variable in local scope.  One can also reference objects from the global scope, depending
+In this case, the refs array refers to a variable in local scope.  One can also reference objects from the global scope, depending

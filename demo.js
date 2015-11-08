@@ -9,11 +9,8 @@ var referenceObject = {
 var referencerObject = {
     myRef: referenceObject
 };
-var refs = [
-    function () { return referenceObject; }
-];
 var stringifyOptions = {
-    refs: refs
+    refs: [function () { return referenceObject; }]
 };
 var objectifyOptions = {
     resolver: function (s) {

@@ -9,11 +9,8 @@ const referenceObject = {
 const referencerObject = {
     myRef: referenceObject,
 };
-const refs = [
-    () => referenceObject
-];
 const stringifyOptions : TSON.IStringifyOptions = {
-    refs: refs
+    refs: [() => referenceObject]
 }
 const objectifyOptions: TSON.IObjectifyOptions = {
     resolver: s => {

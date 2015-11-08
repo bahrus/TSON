@@ -20,7 +20,7 @@ more precision.
 The set of objects for which the output of the JSON.stringify function  can be reversed using the standard JSON.parse function -- 
 resulting in an object with the same exact data and behavior -- is quite small.  Although JSON stands for "JavaScript Object Notation", 
 objects are supposed to encompass more than just data.  They should encompass methods / functions as well.  But with JSON.stringify,  the methods get 
-washed away when performing JSON.stringify(), and thus is unrecoverable when performing JSON.parse().  In mathematical terms, let's refer to 
+washed away when performing JSON.stringify(), and thus is unrecoverable when performing JSON.parse().  Let's refer to 
 the transformation T => JSON.parse(JSON.stringify(T)) as 
 "the JSON clone process". [See this mention of using JSON to clone an object](http://heyjavascript.com/4-creative-ways-to-clone-objects/).
 
@@ -32,7 +32,7 @@ after applying the JSON clone process:
 ```
 
 is quite restrictive.   What qualifies?  Basically, objects with only fields of primitive numbers, strings, booleans, and/or, 
-recursively, sub objects / arrays of sub objects, with the same limitation. This is the entirety of the "idempotent" universe 
+recursively, sub objects / arrays of sub objects, with the same limitation. In mathematical terms, this is the entirety of the "idempotent" universe 
 of JavaScript objects, from the point of view of the JSON clone process.
 
 TSON expands the universe of cloneable objects, where the TSON clone process is idempotent, by adding support for inline functions.  But that's not the 

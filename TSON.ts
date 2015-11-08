@@ -1,3 +1,4 @@
+///<reference path='Scripts/typings/node/node.d.ts'/>
 declare const WorkerGlobalScope;
 
 
@@ -73,7 +74,7 @@ module TSON{
     }
 
     export interface IStringifyOptions{
-        refs?: [() => Object];
+        refs?: (() => Object)[];
     }
     export function stringify(objOrGetter: objOrObjGetter, options?: IStringifyOptions){
         if(options){
@@ -102,7 +103,7 @@ module TSON{
         if(!truncateNo) truncateNo = 0;
         const paths = path.split('.');
         let modulePath = startingObj;
-        if(paths.length > 0){
+        if(paths.length > truncateNo){
             const startingPath = paths[0];
             if(!modulePath[startingPath]){
                 modulePath = eval(startingPath);
@@ -155,11 +156,10 @@ module TSON{
          */
         getterRootObject?: Object;
 
-        /**
-         * TBD
-         */
-        referenceRootObjects?: Object[];
-
+        ///**
+        // * eval for local scope
+        // */
+        resolver?: (s: string) => any;
     }
 
     export function objectify(tson: string, options?: IObjectifyOptions){
@@ -185,16 +185,24 @@ module TSON{
 
         const subs =  <{[key: string]: string;}> obj[__subs__];
         if(subs){
+            const resolver = (options && options.resolver) ? options.resolver : eval;
+            
             for(var path in subs){
+                debugger;
                 const valPath = subs[path];
                 const pathInfo = getObjFromPath(obj, path, false, 1);
                 if(valPath.indexOf(fnHeader) === 0){
-                    const fn = eval(`(${valPath})`);
+                    const fn = resolver(`(${valPath})`);
                     pathInfo.obj[pathInfo.nextWord] = fn;
                 }else{
+                    let val = resolver(subs[path])
+                    if(!val) {
+                        val = getObjFromPath(rootObj, subs[path]);
+                        pathInfo.obj[pathInfo.nextWord] = val.obj;
+                    }else{
+                        pathInfo.obj[pathInfo.nextWord] = val;
+                    }
 
-                    const val = getObjFromPath(rootObj, subs[path]);
-                    pathInfo.obj[pathInfo.nextWord] = val.obj;
                 }
 
             }

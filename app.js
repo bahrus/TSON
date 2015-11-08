@@ -30,8 +30,6 @@ var myModule;
         whatever.test6 = [function (i) { return i.something1; }, function (i) { return i.something2; }];
     })(whatever = myModule.whatever || (myModule.whatever = {}));
 })(myModule || (myModule = {}));
-global['myModule'] = myModule;
-global['myReferencedModule'] = myReferencedModule;
 var stringifyOptions = {
     refs: [function () { return myReferencedModule; }]
 };
@@ -42,3 +40,4 @@ var testS = TSON.stringify(function () { return myModule.whatever; }, stringifyO
 var test2 = TSON.validateIdempotence(function () { return myModule.whatever; }, stringifyOptions, objectifyOptions);
 debugger;
 console.log(testS);
+//# sourceMappingURL=app.js.map

@@ -28,8 +28,7 @@ module myModule.whatever{
 
 
 }
-global['myModule'] = myModule;
-global['myReferencedModule'] = myReferencedModule;
+
 const stringifyOptions : TSON.IStringifyOptions = {
     refs: [() => myReferencedModule],
 };

@@ -4,9 +4,9 @@ An extension of JSON that supports functions, and references to static objects a
 
 What does TSON stand for?
 
-1)  Tasmanian School of Nursing
-2)  TypeScript Object Notation (the library is written in TypeScript and is inspired by some TypeScript features, but using it doesn't require TypeScript), or 
-2)  Textual Serialization Of eNtities (for people who don't like to use TypeScript).
+1.  Tasmanian School of Nursing
+2.  TypeScript Object Notation (the library is written in TypeScript and is inspired by some TypeScript features, but using it doesn't require TypeScript), or 
+3.  Textual Serialization Of eNtities (for people who don't like to use TypeScript).
 
 ## What problems does TSON solve?
 
@@ -53,7 +53,8 @@ are reflected in the deserialized object.
 ## TSON builds on JSON
 
 TSON uses the native JSON function under the hood, and the serialized string is fully compatible with JSON parsers.  But the serialized text has enough
-extra information to be able to restore the inline functions (Problem 1) as well as object references (Problem 2), assuming you use the TSON api.
+extra information to be able to restore the inline functions (Problem 1) as well as object references (Problem 2), assuming 
+you use the TSON api properly (or some variation).
 
 ## Aspects of JSON that TSON does not sacrifice (ish)
 
@@ -74,7 +75,7 @@ But this constraint is responsible for some limitations on the universe of idemp
 ### Problem 2:  Deserializing classes
 
 Many lanuages, like Java and C#, allow deserializing to an instance of a class, where that class could have a constructor which performs operations,
-resulting in side effects.  For this reason, support for instantating ES6 classes is not supported by TSON.
+which can easily result in side effects.  For this reason, support for instantiating ES 2015 classes is not supported by TSON.
 
 ## The TSON API
 
@@ -165,13 +166,11 @@ const refs = [
 const stringifyOptions = {
     refs: refs
 }
-const objectifyOptions = {
-    refs: refs
-}
-const clonedObject = TSON.objectify(
-                        TSON.stringify(referencerObject, stringifyOptions), 
-                        objectifyOptions);
+const serializedString = TSON.stringify(referencerObject, stringifyOptions);
+const clonedObject = TSON.objectify(serializedString);
 referenceObject.refString = 'newValue';
 console.log(clonedObject.myRef.refString);
 //newValue                     
 ```
+
+In this case, the references array refers to a variable in local scope.  One can also reference objects from the global scope, depending

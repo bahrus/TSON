@@ -1,3 +1,4 @@
+///<reference path='Scripts/typings/node/node.d.ts'/>
 var TSON;
 (function (TSON) {
     var fnSignature = 'return ';
@@ -91,8 +92,22 @@ var TSON;
             truncateNo = 0;
         var paths = path.split('.');
         var modulePath = startingObj;
+        if (paths.length > truncateNo) {
+            var startingPath = paths[0];
+            if (!modulePath[startingPath]) {
+                modulePath = eval(startingPath);
+                if (!modulePath) {
+                    modulePath = getGlobalObject()[startingPath];
+                    if (!modulePath) {
+                        //not found, but just let the rest create
+                        modulePath = {};
+                        startingObj[startingPath] = modulePath;
+                    }
+                }
+            }
+        }
         var n = paths.length;
-        for (var i = 0; i < n - truncateNo; i++) {
+        for (var i = 1; i < n - truncateNo; i++) {
             var word = paths[i];
             var newModulePath = modulePath[word];
             if (createIfNotFound) {
@@ -116,6 +131,7 @@ var TSON;
     }
     function objectify(tson, options) {
         var obj = JSON.parse(tson);
+        var rootObj = getGlobalObject();
         if (options) {
             var getter = options.getter;
             if (getter) {
@@ -124,7 +140,9 @@ var TSON;
                     if (obj[__name__] !== fnString) {
                         throw "Destination path does not match signature of object";
                     }
-                    var moduleInfo = getObjFromPath(getGlobalObject(), fnString, true, 1);
+                    if (options.getterRootObject)
+                        rootObj = options.getterRootObject;
+                    var moduleInfo = getObjFromPath(rootObj, fnString, true, 1);
                     moduleInfo.obj[moduleInfo.nextWord] = obj;
                 }
                 else {
@@ -134,16 +152,24 @@ var TSON;
         }
         var subs = obj[__subs__];
         if (subs) {
+            var resolver = (options && options.resolver) ? options.resolver : eval;
             for (var path in subs) {
+                debugger;
                 var valPath = subs[path];
                 var pathInfo = getObjFromPath(obj, path, false, 1);
                 if (valPath.indexOf(fnHeader) === 0) {
-                    var fn = eval("(" + valPath + ")");
+                    var fn = resolver("(" + valPath + ")");
                     pathInfo.obj[pathInfo.nextWord] = fn;
                 }
                 else {
-                    var val = getObjFromPath(getGlobalObject(), subs[path]);
-                    pathInfo.obj[pathInfo.nextWord] = val.obj;
+                    var val = resolver(subs[path]);
+                    if (!val) {
+                        val = getObjFromPath(rootObj, subs[path]);
+                        pathInfo.obj[pathInfo.nextWord] = val.obj;
+                    }
+                    else {
+                        pathInfo.obj[pathInfo.nextWord] = val;
+                    }
                 }
             }
         }
@@ -157,7 +183,7 @@ var TSON;
         fnString = fnString.substr(0, iPosSemi);
         return fnString;
     }
-    function compare2Objects(x, y) {
+    function isEqual(x, y) {
         var p;
         // remember that NaN === NaN returns false
         // and isNaN(undefined) returns true
@@ -222,6 +248,7 @@ var TSON;
         }
         return true;
     }
+    TSON.isEqual = isEqual;
     function validateIdempotence(objOrGetter, stringifyOptions, objectifyOptions) {
         var originalObj = objOrGetter;
         if (typeof originalObj !== 'object') {
@@ -237,7 +264,7 @@ var TSON;
             delete objContainer.obj[lastWord];
         }
         var objTest = objectify(str, objectifyOptions);
-        return compare2Objects(originalObj, objTest);
+        return isEqual(originalObj, objTest);
     }
     TSON.validateIdempotence = validateIdempotence;
     ////from http://stackoverflow.com/questions/2008279/validate-a-javascript-function-name

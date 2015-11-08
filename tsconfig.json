@@ -6,6 +6,7 @@
 	},
 	"files": [
 		"TSON.ts",
-		"app.ts"
+		"app.ts",
+		"demo.ts"
   	]
 }

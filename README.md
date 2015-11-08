@@ -127,7 +127,7 @@ the TSON clone process.
 
 So far in what we've discussed, we have solved Problem 1 above, and we have done so without sacrificing JSON's side-effect free guarantee.
 
-But to solve problem 2 above, the API gets slight more complicated.
+But to solve problem 2 above, the API gets slightly more complicated.
 
 ### Custom Serializing
 
@@ -149,7 +149,7 @@ console.log(referencerObject.myRef.refString);
 //newValue
 ```
 
-But if we first clone referencerObject, using JSON or simple TSON, we break the connection with the referenceObject
+But if we first clone referencerObject, using JSON or simple TSON, we break the connection with the referenceObject:
 
 ```javascript
 const referenceObject = {
@@ -164,7 +164,7 @@ console.log(clonedObject.myRef.refString);
 //originalValue
 ```
 
-If this is not the desired behavior, TSON can fix this thusly:
+Often this is not the desired behavior, TSON can retain the connection:
 
 ```javascript
 const referenceObject = {

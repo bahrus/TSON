@@ -92,7 +92,7 @@ Say we start with a simple object, holding a single function:
     };
 ```
 
-To serialize and deserialize this objectis very similar to the JavaScrfipt native JSON api:
+To serialize and deserialize this object with TSON is very similar to the JavaScrfipt native JSON api:
 
 ```javascript
 const serializedObjectWithAFunction = TSON.stringify(myObjectWithAFunction);

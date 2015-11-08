@@ -72,26 +72,39 @@ But this constraint is responsible for some limitations on the universe of idemp
 
 ### Problem 1:  Dry, wrinkly skin
 
-### Problem 2:  Deserializing classes
+### Problem 2:  Deserializing to a new instance of a class
 
 Many lanuages, like Java and C#, allow deserializing to an instance of a class, where that class could have a constructor which performs operations,
-which can easily result in side effects.  For this reason, support for instantiating ES 2015 classes is not supported by TSON.
+which can easily result in side effects.  Our interest in adhering to the side-effect guarantee means that TSON does not support instantiating ES 2015 classes
+during deserialization.
 
 ## The TSON API
 
 ### Simple
 
-The simplest example is very similar to the JavaScript native JSON api:
+Say we start with a simple object, holding a single function:
 
 ```javascript
-    const serializedString = TSON.stringify(entity);
+    const myObjectWithAFunction = {
+        fnTest: function(a, b, c){
+            return a + b - c;
+        }
+    };
 ```
 
-To reverse the serialization back to an object:
+To serialize and deserialize this objectis very similar to the JavaScrfipt native JSON api:
 
 ```javascript
-    const copyOfEntity = TSO.objectify(serializedString)
+const serializedObjectWithAFunction = TSON.stringify(myObjectWithAFunction);
+const clonedObjectWithAFunction = TSON.objectify(serializedObjectWithAFunction);
+console.log(clonedObjectWithAFunction.fnTest(1, 2, 3));
+//0
+
 ```
+Whereas the JSON equivelent would have given an error (fnTest not defined), TSON is able to recover the function during
+deserialization.
+
+### Other helper functions.
 
 To test whether copyOfObject matches the original entity, TSON includes a reference object comparer function:
 

@@ -3,6 +3,16 @@
 if (typeof (global) !== 'undefined') {
     require('./TSON');
 }
+var myObjectWithAFunction = {
+    fnTest: function (a, b, c) {
+        return a + b - c;
+    }
+};
+console.log(myObjectWithAFunction.fnTest(1, 2, 3));
+var serializedObjectWithAFunction = TSON.stringify(myObjectWithAFunction);
+var clonedObjectWithAFunction = TSON.objectify(serializedObjectWithAFunction);
+console.log(clonedObjectWithAFunction.fnTest(1, 2, 3));
+//0
 var referenceObject = {
     refString: 'originalValue'
 };

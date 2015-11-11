@@ -25,9 +25,7 @@ const stringifyOptions : TSON.IStringifyOptions = {
     refs: [() => referenceObject]
 }
 const objectifyOptions: TSON.IObjectifyOptions = {
-    resolver: s => {
-        return eval(s);
-    }
+    resolver: s => eval(s)
 }
 const serializedString = TSON.stringify(referencerObject, stringifyOptions);
 const clonedObject = TSON.objectify(serializedString, objectifyOptions);

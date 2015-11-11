@@ -23,9 +23,7 @@ var stringifyOptions = {
     refs: [function () { return referenceObject; }]
 };
 var objectifyOptions = {
-    resolver: function (s) {
-        return eval(s);
-    }
+    resolver: function (s) { return eval(s); }
 };
 var serializedString = TSON.stringify(referencerObject, stringifyOptions);
 var clonedObject = TSON.objectify(serializedString, objectifyOptions);

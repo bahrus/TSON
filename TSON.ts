@@ -43,34 +43,44 @@ module TSON{
         }
     }
 
-    function attachBindings(obj: Object, rootObj?: Object, path?: string){
-        if(!rootObj) rootObj = obj;
-        if(!path) path = '';
-        for(let key in obj){
-            const childObj = obj[key];
+    function attachBindings(originalObjectPointer: Object, rootClonedObj?: Object, path?: string, clonedObjectPointer?: Object){
+        if(!rootClonedObj){
+            if(path || clonedObjectPointer){
+                throw "Improper usage";
+            }
+            rootClonedObj = {};
+            path = '';
+            clonedObjectPointer = rootClonedObj;
+        }
+        for(let key in originalObjectPointer){
+            const childOfOriginalObject = originalObjectPointer[key];
             const newPath = path ? path + '.' + key : key;
-            const cn = childObj[__name__];
-            const typ = typeof childObj;
+            const cn = childOfOriginalObject[__name__];
+            const typ = typeof childOfOriginalObject;
             if(cn){
 
-                if(!rootObj[__subs__]) rootObj[__subs__] = {};
-                rootObj[__subs__][newPath] = cn;
+                if(!rootClonedObj[__subs__]) rootClonedObj[__subs__] = {};
+                rootClonedObj[__subs__][newPath] = cn;
             }else{
+
                 switch(typ){
                     case 'function':
-                        if(!rootObj[__subs__]) rootObj[__subs__] = {};
-                        rootObj[__subs__][newPath] = childObj.toString();
+                        if(!rootClonedObj[__subs__]) rootClonedObj[__subs__] = {};
+                        rootClonedObj[__subs__][newPath] = childOfOriginalObject.toString();
                         break;
+                    case 'object':
+                        clonedObjectPointer[key] = {};
+                        attachBindings(childOfOriginalObject, rootClonedObj, path, clonedObjectPointer[key])
+                        break;
+                    default:
+                        clonedObjectPointer[key] = childOfOriginalObject;
+
                 }
             }
 
-            switch(typ) {
-                case 'function':
-                case 'object':
-                    attachBindings(childObj, rootObj, newPath);
-                    break;
-            }
+
         }
+        return rootClonedObj;
     }
 
     export interface IStringifyOptions{
@@ -92,11 +102,11 @@ module TSON{
             obj = (<any>objOrGetter)();
             fnString = getModuleName ( objOrGetter.toString() );
         }
-        attachBindings(obj);
+        const clonedObj = attachBindings(obj);
         if(fnString){
-            obj[__name__] = fnString;
+            clonedObj[__name__] = fnString;
         }
-        return JSON.stringify(obj);
+        return JSON.stringify(clonedObj);
     }
 
     function getObjFromPath(startingObj: Object, path: string, createIfNotFound?: boolean, truncateNo?: number) : {obj: Object, nextWord?: string} {

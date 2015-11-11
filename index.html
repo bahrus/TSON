@@ -6,27 +6,39 @@
     <script src="TSON.js"></script>
 </head>
 <body>
-    <textarea id="scriptExample">
-        var referenceObject = {
-            refString: 'originalValue'
-        };
-        var stringifyOptions = {
-            refs: [function () { return referenceObject; }]
-        };
+    <table>
+        <tr>
+            <td>
+                <textarea rows="20" cols="60" id="scriptExample">
+var referenceObject = {
+    refString: 'originalValue'
+};
+var stringifyOptions = {
+    refs: [function () { return referenceObject; }]
+};
 
 
-        var testObject = {
-            fnTest: function(a, b, c){
-                return a + b - c;
-            },
-            myRef: referenceObject
-        }
-    </textarea>
-    <button onclick="evalTextBox()">Serialize</button>
-    <textarea id="result"></textarea>
+var testObject = {
+    fnTest: function(a, b, c){
+        return a + b - c;
+    },
+    myRef: referenceObject
+}
+                </textarea>
+            </td>
+            <td>
+                <button onclick="evalTextBox()">Serialize</button>
+            </td>
+            <td>
+                <textarea rows="20" cols="60" id="result"></textarea>
+            </td>
+        </tr>
+    </table>
+
+
+
     <script>
         function evalTextBox(){
-            debugger;
             var scriptExample = document.getElementById('scriptExample');
             eval(scriptExample.value);
             var serializedString = TSON.stringify(testObject, stringifyOptions);

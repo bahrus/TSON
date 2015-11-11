@@ -32,37 +32,42 @@ var TSON;
             }
         }
     }
-    function attachBindings(obj, rootObj, path) {
-        if (!rootObj)
-            rootObj = obj;
-        if (!path)
+    function attachBindings(originalObjectPointer, rootClonedObj, path, clonedObjectPointer) {
+        if (!rootClonedObj) {
+            if (path || clonedObjectPointer) {
+                throw "Improper usage";
+            }
+            rootClonedObj = {};
             path = '';
-        for (var key in obj) {
-            var childObj = obj[key];
+            clonedObjectPointer = rootClonedObj;
+        }
+        for (var key in originalObjectPointer) {
+            var childOfOriginalObject = originalObjectPointer[key];
             var newPath = path ? path + '.' + key : key;
-            var cn = childObj[__name__];
-            var typ = typeof childObj;
+            var cn = childOfOriginalObject[__name__];
+            var typ = typeof childOfOriginalObject;
             if (cn) {
-                if (!rootObj[__subs__])
-                    rootObj[__subs__] = {};
-                rootObj[__subs__][newPath] = cn;
+                if (!rootClonedObj[__subs__])
+                    rootClonedObj[__subs__] = {};
+                rootClonedObj[__subs__][newPath] = cn;
             }
             else {
                 switch (typ) {
                     case 'function':
-                        if (!rootObj[__subs__])
-                            rootObj[__subs__] = {};
-                        rootObj[__subs__][newPath] = childObj.toString();
+                        if (!rootClonedObj[__subs__])
+                            rootClonedObj[__subs__] = {};
+                        rootClonedObj[__subs__][newPath] = childOfOriginalObject.toString();
                         break;
+                    case 'object':
+                        clonedObjectPointer[key] = {};
+                        attachBindings(childOfOriginalObject, rootClonedObj, path, clonedObjectPointer[key]);
+                        break;
+                    default:
+                        clonedObjectPointer[key] = childOfOriginalObject;
                 }
             }
-            switch (typ) {
-                case 'function':
-                case 'object':
-                    attachBindings(childObj, rootObj, newPath);
-                    break;
-            }
         }
+        return rootClonedObj;
     }
     function stringify(objOrGetter, options) {
         if (options) {
@@ -80,11 +85,11 @@ var TSON;
             obj = objOrGetter();
             fnString = getModuleName(objOrGetter.toString());
         }
-        attachBindings(obj);
+        var clonedObj = attachBindings(obj);
         if (fnString) {
-            obj[__name__] = fnString;
+            clonedObj[__name__] = fnString;
         }
-        return JSON.stringify(obj);
+        return JSON.stringify(clonedObj);
     }
     TSON.stringify = stringify;
     function getObjFromPath(startingObj, path, createIfNotFound, truncateNo) {

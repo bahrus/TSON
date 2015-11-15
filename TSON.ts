@@ -1,5 +1,5 @@
 ///<reference path='Scripts/typings/node/node.d.ts'/>
-declare const WorkerGlobalScope;
+
 
 
 module TSON{
@@ -10,6 +10,8 @@ module TSON{
     const fnSignatureLn = fnSignature.length;
     const __name__ = '__name__';
     const __subs__ = '__subs__';
+
+    const jsNameRegex = /^[$A-Z_][0-9A-Z_$]*$/i;
 
     Object.defineProperty(String.prototype, '$', {
         get: function(){
@@ -110,40 +112,31 @@ module TSON{
     }
 
     function getObjFromPath(startingObj: Object, path: string, createIfNotFound?: boolean, truncateNo?: number) : {obj: Object, nextWord?: string} {
-        if(!truncateNo) truncateNo = 0;
         const paths = path.split('.');
-        let modulePath = startingObj;
-        if(paths.length > truncateNo){
-            const startingPath = paths[0];
-            if(!modulePath[startingPath]){
-                modulePath = eval(startingPath);
-                if(!modulePath){
-                    modulePath = getGlobalObject()[startingPath];
-                    if(!modulePath){
-                        //not found, but just let the rest create
-                        modulePath = {};
-                        startingObj[startingPath] = modulePath;
-                    }
-                }
-            }
-        }
+        return getObjFromPathTokens(startingObj, paths, createIfNotFound, truncateNo);
+
+    }
+
+    function getObjFromPathTokens (startingObj: Object, paths: string[], createIfNotFound?: boolean, truncateNo?: number) : {obj: Object, nextWord?: string}{
+        if(!truncateNo) truncateNo = 0;
+        let resolvedObj = startingObj;
         let n = paths.length;
         for(let i = 1; i < n - truncateNo; i++){
             const word = paths[i];
-            let newModulePath = modulePath[word];
+            let newModulePath = resolvedObj[word];
             if(createIfNotFound){
                 if(!newModulePath){
                     newModulePath = {};
-                    modulePath[word] = newModulePath;
+                    resolvedObj[word] = newModulePath;
 
                 }
             }else if(!newModulePath){
-                throw path + "not found."
+                throw word + " not found."
             }
-            modulePath = newModulePath;
+            resolvedObj = newModulePath;
         }
         const returnObj : {obj: Object, nextWord?: string} = {
-            obj: modulePath,
+            obj: resolvedObj,
         }
         if(truncateNo){
             returnObj.nextWord = paths[n - truncateNo];
@@ -152,19 +145,19 @@ module TSON{
     }
 
     export interface IObjectifyOptions{
-        /**
-         * Put the deserialized object into the path indicated by this simple getter.
-         * Getter must be a simple path statement, like () => myNameSpace.myModule.myObject;
-         */
-        getter?: () => Object;
+        ///**
+        // * Put the deserialized object into the path indicated by this simple getter.
+        // * Getter must be a simple path statement, like () => myNameSpace.myModule.myObject;
+        // */
+        //getter?: () => Object;
 
-        /**
-         * If a getter is provided, the objectifier will check first if the rootObject property is specified.
-         * If not found, it will start from the global object
-         * (window in browser setting, global in a node.js context, WorkerGlobalScope in a web worker)
-         *
-         */
-        getterRootObject?: Object;
+        ///**
+        // * If a getter is provided, the objectifier will check first if the rootObject property is specified.
+        // * If not found, it will start from the global object
+        // * (window in browser setting, global in a node.js context, WorkerGlobalScope in a web worker)
+        // *
+        // */
+        //getterRootObject?: Object;
 
         ///**
         // * eval for local scope
@@ -174,43 +167,52 @@ module TSON{
 
     export function objectify(tson: string, options?: IObjectifyOptions){
         const obj = JSON.parse(tson);
-        let rootObj = getGlobalObject();
-        if(options){
-            const getter = options.getter;
-            if(getter){
-                const fnString = getModuleName (  getter.toString() );
-                if(fnString){
-                    if(obj[__name__] !== fnString){
-                        throw "Destination path does not match signature of object";
-                    }
-                    if(options.getterRootObject) rootObj = options.getterRootObject;
-                    const moduleInfo = getObjFromPath(rootObj, fnString, true, 1);
-                    moduleInfo.obj[moduleInfo.nextWord] = obj;
-                }else{
-                    throw "No namespace found";
-                }
-            }
-        }
+        //let rootGlobalObj = getGlobalObject();
+        //if(options){
+        //    //const getter = options.getter;
+        //    //if(getter){
+        //    //    const fnString = getModuleName (  getter.toString() );
+        //    //    if(fnString){
+        //    //        if(obj[__name__] !== fnString){
+        //    //            throw "Destination path does not match signature of object";
+        //    //        }
+        //    //        //if(options.getterRootObject) rootGlobalObj = options.getterRootObject;
+        //    //        const moduleInfo = getObjFromPath(rootGlobalObj, fnString, true, 1);
+        //    //        moduleInfo.obj[moduleInfo.nextWord] = obj;
+        //    //    }else{
+        //    //        throw "No namespace found";
+        //    //    }
+        //    //}
+        //}
         
 
         const subs =  <{[key: string]: string;}> obj[__subs__];
         if(subs){
             const resolver = (options && options.resolver) ? options.resolver : eval;
             
-            for(var path in subs){
-                const valPath = subs[path];
-                const pathInfo = getObjFromPath(obj, path, false, 1);
-                if(valPath.indexOf(fnHeader) === 0){
-                    const fn = resolver(`(${valPath})`);
-                    pathInfo.obj[pathInfo.nextWord] = fn;
+            for(var destPath in subs){
+                const srcPath = subs[destPath];
+                const targetObjectInfo = getObjFromPath(obj, destPath, false, 1);
+                if(srcPath.indexOf(fnHeader) === 0){
+                    const fn = resolver(`(${srcPath})`);
+                    targetObjectInfo.obj[targetObjectInfo.nextWord] = fn;
                 }else{
-                    let val = resolver(subs[path])
-                    if(!val) {
-                        val = getObjFromPath(rootObj, subs[path]);
-                        pathInfo.obj[pathInfo.nextWord] = val.obj;
-                    }else{
-                        pathInfo.obj[pathInfo.nextWord] = val;
+
+                    //#region Resolve reference pointer
+                    const srcPathTokns = srcPath.split('.');
+                    const rootPath = srcPathTokns[0];
+                    if(!jsNameRegex.test(rootPath)){
+                        throw "Invalid expression: " + srcPath;
                     }
+                    let rootObj = resolver(rootPath);
+                    if(!rootObj) {
+                        throw "Unable to resolve " + rootPath;
+                    }
+
+
+                    const resolvedReferenceObj = getObjFromPathTokens(rootObj, srcPathTokns.slice(1));
+                    targetObjectInfo.obj[targetObjectInfo.nextWord] = resolvedReferenceObj.obj;
+                    //#endregion
 
                 }
 
@@ -312,14 +314,14 @@ module TSON{
             originalObj = (<any>objOrGetter)();
         }
         const str = stringify(objOrGetter, stringifyOptions);
-        if(objectifyOptions && objectifyOptions.getter){
-            const g = getGlobalObject();
-            const path = getModuleName(objectifyOptions.getter.toString());
-            const objContainer = getObjFromPath(g, path, false, 1);
-            const splitPath = path.split('.');
-            const lastWord = splitPath[splitPath.length - 1];
-            delete objContainer.obj[lastWord];
-        }
+        //if(objectifyOptions && objectifyOptions.getter){
+        //    const g = getGlobalObject();
+        //    const path = getModuleName(objectifyOptions.getter.toString());
+        //    const objContainer = getObjFromPath(g, path, false, 1);
+        //    const splitPath = path.split('.');
+        //    const lastWord = splitPath[splitPath.length - 1];
+        //    delete objContainer.obj[lastWord];
+        //}
         const objTest = objectify(str, objectifyOptions);
         return isEqual(originalObj, objTest);
     }
@@ -329,20 +331,26 @@ module TSON{
     //function isValidIdentifierName(s: string) {
     //    return validIdentifierName.test(s);
     //}
-    export function getGlobalObject() : Object{
-        return typeof window !== "undefined" ? window :
-        typeof WorkerGlobalScope !== "undefined" ? self :
-            typeof global !== "undefined" ? global :
-                Function("return this;")()
-    }
+
+
+    //export function getGlobalObject() : Object{
+    //    return typeof window !== "undefined" ? window :
+    //    typeof WorkerGlobalScope !== "undefined" ? self :
+    //        typeof global !== "undefined" ? global :
+    //            Function("return this;")()
+    //}
 
 }
 
+//#region hood global TSON
+//region  hook global TSON
+declare const WorkerGlobalScope: any;
 
 (function(__global: any) {
     const modInfo = {
         name: 'TSON',
         mod: TSON,
+        //subMod: todo.CommonActions,
     }
     if (typeof __global[modInfo.name] !== "undefined") {
         if (__global[modInfo.name] !== modInfo.mod) {
@@ -355,7 +363,8 @@ module TSON{
         __global[modInfo.name] = modInfo.mod;
     }
 })(
-    TSON.getGlobalObject()
-    );
-
-
+    typeof window !== "undefined" ? window :
+        typeof WorkerGlobalScope !== "undefined" ? self :
+            typeof global !== "undefined" ? global :
+                Function("return this;")());
+//#endregion

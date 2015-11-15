@@ -26,6 +26,7 @@ var objectifyOptions = {
     resolver: function (s) { return eval(s); }
 };
 var serializedString = TSON.stringify(referencerObject, stringifyOptions);
+debugger;
 var clonedObject = TSON.objectify(serializedString, objectifyOptions);
 referenceObject.refString = 'newValue';
 console.log(clonedObject.myRef.refString);

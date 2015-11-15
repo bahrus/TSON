@@ -6,6 +6,7 @@ var TSON;
     var fnSignatureLn = fnSignature.length;
     var __name__ = '__name__';
     var __subs__ = '__subs__';
+    var jsNameRegex = /^[$A-Z_][0-9A-Z_$]*$/i;
     Object.defineProperty(String.prototype, '$', {
         get: function () {
             return this;
@@ -93,41 +94,30 @@ var TSON;
     }
     TSON.stringify = stringify;
     function getObjFromPath(startingObj, path, createIfNotFound, truncateNo) {
+        var paths = path.split('.');
+        return getObjFromPathTokens(startingObj, paths, createIfNotFound, truncateNo);
+    }
+    function getObjFromPathTokens(startingObj, paths, createIfNotFound, truncateNo) {
         if (!truncateNo)
             truncateNo = 0;
-        var paths = path.split('.');
-        var modulePath = startingObj;
-        if (paths.length > truncateNo) {
-            var startingPath = paths[0];
-            if (!modulePath[startingPath]) {
-                modulePath = eval(startingPath);
-                if (!modulePath) {
-                    modulePath = getGlobalObject()[startingPath];
-                    if (!modulePath) {
-                        //not found, but just let the rest create
-                        modulePath = {};
-                        startingObj[startingPath] = modulePath;
-                    }
-                }
-            }
-        }
+        var resolvedObj = startingObj;
         var n = paths.length;
         for (var i = 1; i < n - truncateNo; i++) {
             var word = paths[i];
-            var newModulePath = modulePath[word];
+            var newModulePath = resolvedObj[word];
             if (createIfNotFound) {
                 if (!newModulePath) {
                     newModulePath = {};
-                    modulePath[word] = newModulePath;
+                    resolvedObj[word] = newModulePath;
                 }
             }
             else if (!newModulePath) {
-                throw path + "not found.";
+                throw word + " not found.";
             }
-            modulePath = newModulePath;
+            resolvedObj = newModulePath;
         }
         var returnObj = {
-            obj: modulePath
+            obj: resolvedObj
         };
         if (truncateNo) {
             returnObj.nextWord = paths[n - truncateNo];
@@ -136,44 +126,46 @@ var TSON;
     }
     function objectify(tson, options) {
         var obj = JSON.parse(tson);
-        var rootObj = getGlobalObject();
-        if (options) {
-            var getter = options.getter;
-            if (getter) {
-                var fnString = getModuleName(getter.toString());
-                if (fnString) {
-                    if (obj[__name__] !== fnString) {
-                        throw "Destination path does not match signature of object";
-                    }
-                    if (options.getterRootObject)
-                        rootObj = options.getterRootObject;
-                    var moduleInfo = getObjFromPath(rootObj, fnString, true, 1);
-                    moduleInfo.obj[moduleInfo.nextWord] = obj;
-                }
-                else {
-                    throw "No namespace found";
-                }
-            }
-        }
+        //let rootGlobalObj = getGlobalObject();
+        //if(options){
+        //    //const getter = options.getter;
+        //    //if(getter){
+        //    //    const fnString = getModuleName (  getter.toString() );
+        //    //    if(fnString){
+        //    //        if(obj[__name__] !== fnString){
+        //    //            throw "Destination path does not match signature of object";
+        //    //        }
+        //    //        //if(options.getterRootObject) rootGlobalObj = options.getterRootObject;
+        //    //        const moduleInfo = getObjFromPath(rootGlobalObj, fnString, true, 1);
+        //    //        moduleInfo.obj[moduleInfo.nextWord] = obj;
+        //    //    }else{
+        //    //        throw "No namespace found";
+        //    //    }
+        //    //}
+        //}
         var subs = obj[__subs__];
         if (subs) {
             var resolver = (options && options.resolver) ? options.resolver : eval;
-            for (var path in subs) {
-                var valPath = subs[path];
-                var pathInfo = getObjFromPath(obj, path, false, 1);
-                if (valPath.indexOf(fnHeader) === 0) {
-                    var fn = resolver("(" + valPath + ")");
-                    pathInfo.obj[pathInfo.nextWord] = fn;
+            for (var destPath in subs) {
+                var srcPath = subs[destPath];
+                var targetObjectInfo = getObjFromPath(obj, destPath, false, 1);
+                if (srcPath.indexOf(fnHeader) === 0) {
+                    var fn = resolver("(" + srcPath + ")");
+                    targetObjectInfo.obj[targetObjectInfo.nextWord] = fn;
                 }
                 else {
-                    var val = resolver(subs[path]);
-                    if (!val) {
-                        val = getObjFromPath(rootObj, subs[path]);
-                        pathInfo.obj[pathInfo.nextWord] = val.obj;
+                    //#region Resolve reference pointer
+                    var srcPathTokns = srcPath.split('.');
+                    var rootPath = srcPathTokns[0];
+                    if (!jsNameRegex.test(rootPath)) {
+                        throw "Invalid expression: " + srcPath;
                     }
-                    else {
-                        pathInfo.obj[pathInfo.nextWord] = val;
+                    var rootObj = resolver(rootPath);
+                    if (!rootObj) {
+                        throw "Unable to resolve " + rootPath;
                     }
+                    var resolvedReferenceObj = getObjFromPathTokens(rootObj, srcPathTokns.slice(1));
+                    targetObjectInfo.obj[targetObjectInfo.nextWord] = resolvedReferenceObj.obj;
                 }
             }
         }
@@ -259,30 +251,18 @@ var TSON;
             originalObj = objOrGetter();
         }
         var str = stringify(objOrGetter, stringifyOptions);
-        if (objectifyOptions && objectifyOptions.getter) {
-            var g = getGlobalObject();
-            var path = getModuleName(objectifyOptions.getter.toString());
-            var objContainer = getObjFromPath(g, path, false, 1);
-            var splitPath = path.split('.');
-            var lastWord = splitPath[splitPath.length - 1];
-            delete objContainer.obj[lastWord];
-        }
+        //if(objectifyOptions && objectifyOptions.getter){
+        //    const g = getGlobalObject();
+        //    const path = getModuleName(objectifyOptions.getter.toString());
+        //    const objContainer = getObjFromPath(g, path, false, 1);
+        //    const splitPath = path.split('.');
+        //    const lastWord = splitPath[splitPath.length - 1];
+        //    delete objContainer.obj[lastWord];
+        //}
         var objTest = objectify(str, objectifyOptions);
         return isEqual(originalObj, objTest);
     }
     TSON.validateIdempotence = validateIdempotence;
-    ////from http://stackoverflow.com/questions/2008279/validate-a-javascript-function-name
-    //const validIdentifierName = /^[$A-Z_][0-9A-Z_$]*$/i;
-    //function isValidIdentifierName(s: string) {
-    //    return validIdentifierName.test(s);
-    //}
-    function getGlobalObject() {
-        return typeof window !== "undefined" ? window :
-            typeof WorkerGlobalScope !== "undefined" ? self :
-                typeof global !== "undefined" ? global :
-                    Function("return this;")();
-    }
-    TSON.getGlobalObject = getGlobalObject;
 })(TSON || (TSON = {}));
 (function (__global) {
     var modInfo = {
@@ -299,5 +279,9 @@ var TSON;
     else {
         __global[modInfo.name] = modInfo.mod;
     }
-})(TSON.getGlobalObject());
+})(typeof window !== "undefined" ? window :
+    typeof WorkerGlobalScope !== "undefined" ? self :
+        typeof global !== "undefined" ? global :
+            Function("return this;")());
+//#endregion
 //# sourceMappingURL=TSON.js.map

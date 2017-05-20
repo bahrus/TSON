@@ -166,6 +166,7 @@ var TSON;
                     }
                     var resolvedReferenceObj = getObjFromPathTokens(rootObj, srcPathTokns.slice(1));
                     targetObjectInfo.obj[targetObjectInfo.nextWord] = resolvedReferenceObj.obj;
+                    //#endregion
                 }
             }
         }
@@ -263,6 +264,17 @@ var TSON;
         return isEqual(originalObj, objTest);
     }
     TSON.validateIdempotence = validateIdempotence;
+    ////from http://stackoverflow.com/questions/2008279/validate-a-javascript-function-name
+    //const validIdentifierName = /^[$A-Z_][0-9A-Z_$]*$/i;
+    //function isValidIdentifierName(s: string) {
+    //    return validIdentifierName.test(s);
+    //}
+    //export function getGlobalObject() : Object{
+    //    return typeof window !== "undefined" ? window :
+    //    typeof WorkerGlobalScope !== "undefined" ? self :
+    //        typeof global !== "undefined" ? global :
+    //            Function("return this;")()
+    //}
 })(TSON || (TSON = {}));
 (function (__global) {
     var modInfo = {
@@ -284,4 +296,3 @@ var TSON;
         typeof global !== "undefined" ? global :
             Function("return this;")());
 //#endregion
-//# sourceMappingURL=TSON.js.map

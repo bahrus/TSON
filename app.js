@@ -28,16 +28,15 @@ var myModule;
         };
         whatever.test5 = function (i) { return i.something; };
         whatever.test6 = [function (i) { return i.something1; }, function (i) { return i.something2; }];
+        // const stringifyOptions : TSON.IStringifyOptions = {
+        //     refs: [() => myReferencedModule],
+        // };
+        // const objectifyOptions : TSON.IObjectifyOptions = {
+        //     getter: () => myModule.whatever,
+        // };
+        // const testS = TSON.stringify(() => myModule.whatever, stringifyOptions);
+        // const test2 = TSON.validateIdempotence(() => myModule.whatever, stringifyOptions, objectifyOptions);
+        // debugger;
+        // console.log(testS);
     })(whatever = myModule.whatever || (myModule.whatever = {}));
 })(myModule || (myModule = {}));
-var stringifyOptions = {
-    refs: [function () { return myReferencedModule; }]
-};
-var objectifyOptions = {
-    getter: function () { return myModule.whatever; }
-};
-var testS = TSON.stringify(function () { return myModule.whatever; }, stringifyOptions);
-var test2 = TSON.validateIdempotence(function () { return myModule.whatever; }, stringifyOptions, objectifyOptions);
-debugger;
-console.log(testS);
-//# sourceMappingURL=app.js.map
